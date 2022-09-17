@@ -1,0 +1,18 @@
+include MANIFEST.in
+include requirements.txt
+include *.json
+include *.md
+include *.py
+include *.txt
+recursive-include reservation_system *.css
+recursive-include reservation_system *.csv
+recursive-include reservation_system *.html
+recursive-include reservation_system *.ico
+recursive-include reservation_system *.js
+recursive-include reservation_system *.json
+recursive-include reservation_system *.md
+recursive-include reservation_system *.png
+recursive-include reservation_system *.py
+recursive-include reservation_system *.svg
+recursive-include reservation_system *.txt
+recursive-exclude reservation_system *.pyc
