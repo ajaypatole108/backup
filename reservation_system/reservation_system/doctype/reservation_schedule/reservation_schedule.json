@@ -11,7 +11,8 @@
   "select",
   "so_number",
   "quotation",
-  "posting_date",
+  "so_posting_date",
+  "quot_posting_date",
   "reserve_till",
   "company",
   "parent_warehouse",
@@ -47,12 +48,6 @@
    "fieldtype": "Link",
    "label": "Quotation",
    "options": "Quotation"
-  },
-  {
-   "fetch_from": "so_number.transaction_date",
-   "fieldname": "posting_date",
-   "fieldtype": "Data",
-   "label": "Posting Date"
   },
   {
    "fieldname": "reserve_till",
@@ -99,12 +94,26 @@
    "fieldtype": "Table",
    "label": "Items",
    "options": "Reservation Schedule Item"
+  },
+  {
+   "depends_on": "eval: doc.select == 'SO Number'",
+   "fetch_from": "so_number.transaction_date",
+   "fieldname": "so_posting_date",
+   "fieldtype": "Data",
+   "label": "Posting Date"
+  },
+  {
+   "depends_on": "eval: doc.select == 'Quotation'",
+   "fetch_from": "quotation.transaction_date",
+   "fieldname": "quot_posting_date",
+   "fieldtype": "Data",
+   "label": " Posting Date"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2022-09-17 14:18:33.531580",
+ "modified": "2022-09-17 16:20:19.370189",
  "modified_by": "Administrator",
  "module": "Reservation System",
  "name": "Reservation Schedule",

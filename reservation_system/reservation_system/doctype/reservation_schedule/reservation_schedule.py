@@ -1,6 +1,8 @@
 # Copyright (c) 2022, ajay patole and contributors
 # For license information, please see license.txt
 
+from pydoc import doc
+from turtle import update
 import frappe
 from frappe.model.document import Document
 from frappe.utils  import getdate,nowdate
@@ -10,6 +12,13 @@ class ReservationSchedule(Document):
 	def validate(self):
 		self.check_reserve_till()
 		self.reserve_qty()
+		self.set_status()
+
+	def set_status(self):
+		if self.docstatus == 1:
+			self.status = 'Open'
+		elif self.docstatus == 2:
+			self.status = 'Close'
 
 	def check_reserve_till(self):
 		if self.reserve_till and (getdate(self.reserve_till) < getdate(nowdate())):
@@ -35,19 +44,17 @@ class ReservationSchedule(Document):
 
 			for i in self.items:
 				data = self.check_item_in_warehouse_bin(self.parent_warehouse,i.item_code)[0].actual_qty
-				
+
 				if data > i.qty:
 					i.reserve_qty = i.qty
 				else:
 					i.reserve_qty = data
 
 
-
 # to extract items from database using so_number or quotation
 @frappe.whitelist()
 def get_items(**args):
 	so_number = args.get('so_number')
-	print('SO Number: ',so_number)
 	quotation = args.get('quotation')
 
 	if so_number:
