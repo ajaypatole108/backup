@@ -17,8 +17,6 @@ class ReservationSchedule(Document):
 	def set_status(self):
 		if self.docstatus == 1:
 			self.status = 'Open'
-		elif self.docstatus == 2:
-			self.status = 'Close'
 
 	def check_reserve_till(self):
 		if self.reserve_till and (getdate(self.reserve_till) < getdate(nowdate())):
