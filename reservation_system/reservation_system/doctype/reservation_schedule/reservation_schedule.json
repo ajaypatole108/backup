@@ -1,6 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "RES-.####",
  "creation": "2022-09-17 10:46:58.492286",
  "doctype": "DocType",
  "editable_grid": 1,
@@ -24,7 +25,8 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Customer",
-   "options": "Customer"
+   "options": "Customer",
+   "reqd": 1
   },
   {
    "fieldname": "select",
@@ -68,7 +70,8 @@
    "fieldname": "parent_warehouse",
    "fieldtype": "Link",
    "label": "Parent Warehouse",
-   "options": "Warehouse"
+   "options": "Warehouse",
+   "reqd": 1
   },
   {
    "default": "Draft",
@@ -101,10 +104,11 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2022-09-17 12:36:55.519435",
+ "modified": "2022-09-17 14:18:33.531580",
  "modified_by": "Administrator",
  "module": "Reservation System",
  "name": "Reservation Schedule",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {

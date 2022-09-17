@@ -31,3 +31,66 @@ frappe.ui.form.on('Reservation Schedule', {
 		});
 	}
 });
+
+// Script to populate the items when we select so_number or quotation
+frappe.ui.form.on('Reservation Schedule', {
+    so_number: function(frm) {
+	    let so_number = frm.doc.so_number;
+	    
+	    if (so_number){
+	        frappe.call({
+	            method:'reservation_system.reservation_system.doctype.reservation_schedule.reservation_schedule.get_items',
+	            args:{
+					so_number:so_number,
+				}
+	        }).done((r) => {
+
+	           frm.doc.items = []
+	           
+	           $.each(r.message, function(_i, e){
+				let entry = frm.add_child('items');
+	               entry.item_code = e.item_code;
+	               entry.item_name = e.item_name;
+	               entry.qty = e.qty;
+                   entry.actual_qty = e.actual_qty;
+				   entry.description = e.description;
+				   entry.uom = e.uom;
+				   entry.rate = e.rate;
+				   entry.conversion_factor = e.conversion_factor;
+				   entry.so_detail = e.name;
+	           })
+	           refresh_field('items')
+	        })
+	    }
+    },
+
+	quotation: function(frm) {
+	    let quotation = frm.doc.quotation;
+	    
+	    if (quotation){
+	        frappe.call({
+	            method:'reservation_system.reservation_system.doctype.reservation_schedule.reservation_schedule.get_items',
+	            args:{
+					quotation:quotation,
+				}
+	        }).done((r) => {
+
+	           frm.doc.items = []
+           
+	           $.each(r.message, function(_i, e){
+	               let entry = frm.add_child('items');
+	               entry.item_code = e.item_code;
+	               entry.item_name = e.item_name;
+	               entry.qty = e.qty;
+                   entry.actual_qty = e.actual_qty;
+				   entry.description = e.description;
+				   entry.uom = e.uom;
+				   entry.rate = e.rate;
+				   entry.conversion_factor = e.conversion_factor;
+				   entry.so_detail = e.name;
+	           })
+	           refresh_field('items')
+	        })
+	    }
+    },
+});
