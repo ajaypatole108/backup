@@ -7,7 +7,7 @@ frappe.ui.form.on('Reservation Schedule', {
 			return {
 				filters: [
 					['Sales Order','docstatus','=',1],
-					['Sales Order','customer','=',cur_frm.doc.customer]
+					['Sales Order','customer','=',cur_frm.doc.customer],
 				]
 			}
 		});
@@ -16,8 +16,8 @@ frappe.ui.form.on('Reservation Schedule', {
 			return {
 				filters: [
 					['Quotation', 'docstatus','=',1],
-					['Quotation','party_name','=',cur_frm.doc.party_name],
-					['Quotation','status','=','Open']
+					['Quotation','party_name','=',cur_frm.doc.customer],
+					['Quotation','status','=','Open'],
 				]
 			}
 		});

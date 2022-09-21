@@ -102,13 +102,11 @@ app_license = "MIT"
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-#	"*": {
-#		"on_update": "method",
-#		"on_cancel": "method",
-#		"on_trash": "method"
-#	}
-# }
+doc_events = {
+	"Stock Ledger Entry": {
+		"validate": "reservation_system.reservation_system.doctype.reservation_schedule.reservation_schedule.update_deliverd_qty",
+	},
+}
 
 # Scheduled Tasks
 # ---------------

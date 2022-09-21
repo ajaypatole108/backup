@@ -66,3 +66,6 @@ def get_items(**args):
 								SELECT * FROM `tabQuotation Item` WHERE `tabQuotation Item`.parent='{quotation}'
 							""",as_dict=1)
 		return items
+		
+def update_deliverd_qty(doc,event):
+	frappe.throw('Hook Connected')
