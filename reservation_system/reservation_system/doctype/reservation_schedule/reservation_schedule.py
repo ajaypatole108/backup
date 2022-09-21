@@ -12,11 +12,11 @@ class ReservationSchedule(Document):
 	def validate(self):
 		self.check_reserve_till()
 		self.reserve_qty()
-		self.set_status()
+		# self.set_status()
 
-	def set_status(self):
-		if self.docstatus == 1:
-			self.status = 'Open'
+	# def set_status(self):
+	# 	if self.docstatus == 1:
+	# 		self.status = 'Open'
 
 	def check_reserve_till(self):
 		if self.reserve_till and (getdate(self.reserve_till) < getdate(nowdate())):
@@ -42,7 +42,7 @@ class ReservationSchedule(Document):
 
 			for i in self.items:
 				data = self.check_item_in_warehouse_bin(self.parent_warehouse,i.item_code)[0].actual_qty
-
+				
 				if data > i.qty:
 					i.reserve_qty = i.qty
 				else:
