@@ -11,7 +11,7 @@ class ReservationSchedule(Document):
 	
 	def validate(self):
 		self.check_reserve_till()
-		self.reserve_qty()
+		# self.reserve_qty()
 		# self.set_status()
 
 	# def set_status(self):
@@ -35,18 +35,49 @@ class ReservationSchedule(Document):
 							""",as_dict=1)
 		return data
 
+	def before_submit(self):
+		self.reserve_qty()
+	# def after_save(self):
+	# 	self.reserve_qty()
+
 	def reserve_qty(self):
 		if self.so_number:
 			# so_number = self.get('so_number')
 			# clubed_item1 = reserve1(so_number)
-
 			for i in self.items:
-				data = self.check_item_in_warehouse_bin(self.parent_warehouse,i.item_code)[0].actual_qty
-				
-				if data > i.qty:
+				actual_qty_in_wh = self.check_item_in_warehouse_bin(self.parent_warehouse,i.item_code)[0].actual_qty
+
+				allocated_reserve_qty = frappe.db.sql(f"""
+														SELECT item_code, SUM(reserve_qty) as reserve_qty
+														FROM `tabReservation Schedule Item`
+														WHERE item_code = '{i.item_code}'
+													""",as_dict=1)
+
+				print('Already allocated_reserve_qty : ',allocated_reserve_qty)
+
+				if allocated_reserve_qty[0].reserve_qty == None: 
+					print('entered')
+					allocated_reserve_qty[0].item_code = i.item_code
+					allocated_reserve_qty[0].reserve_qty = 0.0
+
+				already_allocated = allocated_reserve_qty[0].reserve_qty
+				print(already_allocated)
+
+				new_wh_qty = actual_qty_in_wh - already_allocated
+
+				# print('actual qyt: ',actual_qty_in_wh)
+				# print('already allocated: ',already_allocated)
+				# print('new_wh_qty: ',new_wh_qty)
+
+				if new_wh_qty > i.qty:
 					i.reserve_qty = i.qty
+					i.actual_qty = new_wh_qty
+				elif new_wh_qty == 0.0:
+					i.reserve_qty = new_wh_qty
+					i.actual_qty = new_wh_qty
 				else:
-					i.reserve_qty = data
+					i.reserve_qty = new_wh_qty
+					i.actual_qty = new_wh_qty
 
 
 # to extract items from database using so_number or quotation
