@@ -11,17 +11,20 @@ class ReservationSchedule(Document):
 	
 	def validate(self):
 		self.check_reserve_till()
-		# self.reserve_qty()
-		# self.set_status()
+		self.restrict_duplicate_item_reservaton()
+	
+	def before_submit(self):
+		self.reserve_qty()
+		
+	def before_save(self):
+		pass
 
-	# def set_status(self):
-	# 	if self.docstatus == 1:
-	# 		self.status = 'Open'
-
+	# Restricting to select past date
 	def check_reserve_till(self):
 		if self.reserve_till and (getdate(self.reserve_till) < getdate(nowdate())):
 			frappe.throw("Reserve till date cannot be past date")
 	
+	# Checking item qty in warehouse bin
 	def check_item_in_warehouse_bin(self,parent_warehouse,item_code):
 		data = frappe.db.sql(f"""
 								SELECT SUM(actual_qty) as actual_qty
@@ -35,16 +38,31 @@ class ReservationSchedule(Document):
 							""",as_dict=1)
 		return data
 
-	def before_submit(self):
-		self.reserve_qty()
-	# def after_save(self):
-	# 	self.reserve_qty()
+	# Restricting duplicate item reservation with same so_number
+	def restrict_duplicate_item_reservaton(self):
+		if self.so_number:
+			for i in self.items:
+				item_code = i.item_code
+				so_number = self.so_number
 
+				items = frappe.db.sql(f"""
+										SELECT item_code, so_details FROM `tabReservation Schedule Item`
+										WHERE
+										item_code = '{item_code}' AND
+										so_details = '{so_number}'
+									""",as_dict=1)
+
+				if items[0].item_code == item_code and items[0].so_details == so_number:
+					frappe.throw('item canot be reserve twice with same so_number')
+
+	# Reserving item qty 
 	def reserve_qty(self):
 		if self.so_number:
 			# so_number = self.get('so_number')
 			# clubed_item1 = reserve1(so_number)
 			for i in self.items:
+				i.so_details = self.so_number
+
 				actual_qty_in_wh = self.check_item_in_warehouse_bin(self.parent_warehouse,i.item_code)[0].actual_qty
 
 				allocated_reserve_qty = frappe.db.sql(f"""
@@ -53,32 +71,23 @@ class ReservationSchedule(Document):
 														WHERE item_code = '{i.item_code}'
 													""",as_dict=1)
 
-				print('Already allocated_reserve_qty : ',allocated_reserve_qty)
+				# print('Already allocated_reserve_qty : ',allocated_reserve_qty)
 
-				if allocated_reserve_qty[0].reserve_qty == None: 
-					print('entered')
+				if allocated_reserve_qty[0].reserve_qty == None:
 					allocated_reserve_qty[0].item_code = i.item_code
 					allocated_reserve_qty[0].reserve_qty = 0.0
 
 				already_allocated = allocated_reserve_qty[0].reserve_qty
-				print(already_allocated)
 
 				new_wh_qty = actual_qty_in_wh - already_allocated
-
-				# print('actual qyt: ',actual_qty_in_wh)
-				# print('already allocated: ',already_allocated)
-				# print('new_wh_qty: ',new_wh_qty)
 
 				if new_wh_qty > i.qty:
 					i.reserve_qty = i.qty
 					i.actual_qty = new_wh_qty
 				elif new_wh_qty == 0.0:
 					i.reserve_qty = new_wh_qty
-					i.actual_qty = new_wh_qty
 				else:
 					i.reserve_qty = new_wh_qty
-					i.actual_qty = new_wh_qty
-
 
 # to extract items from database using so_number or quotation
 @frappe.whitelist()
@@ -99,4 +108,31 @@ def get_items(**args):
 		return items
 		
 def update_deliverd_qty(doc,event):
-	frappe.throw('Hook Connected')
+	# extracted item_code, qty, against_sales_order from delivery Note
+	delivery_note_items = frappe.db.sql(f"""
+										SELECT item_code, qty, against_sales_order from `tabDelivery Note Item`
+										WHERE
+										`tabDelivery Note Item`.parent = '{doc.voucher_no}'
+									""",as_dict=1)
+	print(delivery_note_items)
+								
+	for i in range(len(delivery_note_items)):
+		item_code = delivery_note_items[i].item_code
+		qty = delivery_note_items[i].qty
+		against_sales_order = delivery_note_items[i].against_sales_order
+
+		# Checking Dilivery Note field against_sales_order is not null means it contain so number
+		if against_sales_order != None:
+			reservation_schedule_documents = frappe.db.sql(f"""
+													SELECT name from `tabReservation Schedule`
+													WHERE
+													so_number = '{against_sales_order}'
+												""",as_dict=1)
+			print('Reservation schedule document Number: ',reservation_schedule_documents)
+
+			rs_doc_number = reservation_schedule_documents[0].name
+
+			# Assigining delivered_qty from Delivery Note item in reservation schedule
+			frappe.db.set_value('Reservation Schedule Item',
+								{'parent':rs_doc_number, 'item_code':item_code},
+								'delivered_qty',qty)

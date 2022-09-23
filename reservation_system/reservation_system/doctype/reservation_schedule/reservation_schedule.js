@@ -8,6 +8,7 @@ frappe.ui.form.on('Reservation Schedule', {
 				filters: [
 					['Sales Order','docstatus','=',1],
 					['Sales Order','customer','=',cur_frm.doc.customer],
+					['Sales Order','status','=','To Deliver and Bill'],
 				]
 			}
 		});
@@ -48,6 +49,7 @@ frappe.ui.form.on('Reservation Schedule', {
 	           frm.doc.items = []
 	           
 	           $.each(r.message, function(_i, e){
+				console.log(e)
 				let entry = frm.add_child('items');
 	               entry.item_code = e.item_code;
 	               entry.item_name = e.item_name;
@@ -57,7 +59,6 @@ frappe.ui.form.on('Reservation Schedule', {
 				   entry.uom = e.uom;
 				   entry.rate = e.rate;
 				   entry.conversion_factor = e.conversion_factor;
-				   entry.so_detail = e.name;
 	           })
 	           refresh_field('items')
 	        })
@@ -87,7 +88,6 @@ frappe.ui.form.on('Reservation Schedule', {
 				   entry.uom = e.uom;
 				   entry.rate = e.rate;
 				   entry.conversion_factor = e.conversion_factor;
-				   entry.so_detail = e.name;
 	           })
 	           refresh_field('items')
 	        })
