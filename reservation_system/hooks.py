@@ -104,7 +104,7 @@ app_license = "MIT"
 
 doc_events = {
 	"Stock Ledger Entry": {
-		"validate": "reservation_system.reservation_system.doctype.reservation_schedule.reservation_schedule.update_deliverd_qty",
+		"validate": "reservation_system.reservation_system.doctype.reservation_schedule.reservation_schedule.update_delivered_qty",
 	},
 }
 
