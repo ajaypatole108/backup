@@ -1,31 +1,30 @@
 # Copyright (c) 2022, ajay patole and contributors
 # For license information, please see license.txt
 
-from pydoc import doc
-from turtle import update
-from typing_extensions import Self
 import frappe
 from frappe.model.document import Document
 from frappe.utils  import getdate,nowdate
 
+
 class ReservationSchedule(Document):
 	def validate(self):
 		self.check_reserve_till()
-		# self.reservReservationSchedulee_qty()
-		# self.restrict_duplicate_item_reservaton()
-		# self.set_status()
-		# self.update_status()
+		self.restrict_duplicate_item_reservaton()
+
+
 		flag = 1
 		for i in self.items:
 			if i.delivered_qty != i.qty:
 				flag = 0
 		if flag == 0:
 			self.status = 'Open'
+
+		if self.docstatus == 2:
+			self.status = 'Cancelled'
 				
 	def before_submit(self):
 		self.reserve_qty()
 		
-
 	def before_save(self):
 		pass
 
@@ -64,7 +63,11 @@ class ReservationSchedule(Document):
 										SELECT item_code, so_details FROM `tabReservation Schedule Item`
 										WHERE
 										item_code = '{item_code}' AND
-										so_details = '{so_number}'
+										so_details = '{so_number}' AND
+										(
+											SELECT docstatus from `tabReservation Schedule` 
+											WHERE name = `tabReservation Schedule Item`.parent
+										) = 1
 									""",as_dict=1)
 				# This condition is define to collect all items in a list which are already reserve with same so_number	
 				if len(items) != 0:
@@ -84,6 +87,15 @@ class ReservationSchedule(Document):
 		if self.so_number:
 			# so_number = self.get('so_number')
 			# clubed_item1 = reserve1(so_number)
+			
+			#Pulled so_date for priority at the time of GRN
+			pulled_so_date = frappe.db.sql(f"""
+											SELECT creation from `tabSales Order`
+											WHERE
+											name = '{self.so_number}'
+										""",as_dict=1)[0]
+			self.so_date = pulled_so_date.creation
+
 			for i in self.items:
 				i.so_details = self.so_number
 
@@ -95,11 +107,12 @@ class ReservationSchedule(Document):
 														FROM `tabReservation Schedule Item`
 														WHERE item_code = '{i.item_code}'
 														AND
+														so_details = '{self.so_number}'
+														AND
 														(
 															SELECT docstatus from `tabReservation Schedule` 
 															WHERE name = `tabReservation Schedule Item`.parent
 														) = 1
-														
 													""",as_dict=1)
 
 				print('allocated_reserve_qty',allocated_reserve_qty)
@@ -125,7 +138,7 @@ class ReservationSchedule(Document):
 					qty = 0.0
 
 				already_allocated = allocated_reserve_qty[0].reserve_qty
-				print(already_allocated)
+				print('already_allocated: ',already_allocated)
 
 				new_wh_qty = actual_qty_in_wh - already_allocated
 				print('new_wh_qty : ',new_wh_qty)
@@ -260,11 +273,11 @@ def update_delivered_qty(doc,event):
 			else:
 				pass
 
-	set_status(reservation_schedule_items.parent)
+		set_status(reservation_schedule_items.parent)
+		
+	#-------------------------------------------- GRN Items ----------------------------------------------------
 	
-	# GRN items
 	if doc.voucher_type == 'Purchase Receipt':
-		print('Purchase Receipt Item')
 		purchase_reciept_item = frappe.db.sql(f"""
 												SELECT item_code, qty FROM `tabPurchase Receipt Item`
 												WHERE
@@ -274,59 +287,65 @@ def update_delivered_qty(doc,event):
 											""",as_dict=1)[0]
 		print('purchase_reciept_item: ',purchase_reciept_item)
 
+		pr_item_code = purchase_reciept_item.item_code
+		pr_item_qty = purchase_reciept_item.qty
+
 		reservation_schedule_doc = frappe.db.sql(f"""
-													SELECT name,so_number from `tabReservation Schedule`
+													SELECT name,so_number,so_date from `tabReservation Schedule`
 													WHERE
 													status = 'Open'
-												""",as_dict=1)[0]
+													ORDER BY so_date
+												""",as_dict=1)
+		print('reservation_schedule_doc : ',reservation_schedule_doc)
 
-		# reservation_schedule_doc_num = reservation_schedule_doc[0].name
-		print('reservation_schedule_doc: ',reservation_schedule_doc)
+		pr_qty = pr_item_qty
 
-		for i in purchase_reciept_item:
-			item_code = purchase_reciept_item.item_code
-			pr_qty = purchase_reciept_item.qty
-			print('item_code : ',item_code)
-			print('pr_qty : ',pr_qty)
+		for i in reservation_schedule_doc:
+			rs_number = i.name
+			rs_so_number = i.so_number
+			rs_so_creation_date = i.so_date
+			print('rs_number: ',rs_number)
+			# print('rs_so_number: ',rs_so_number)
+			# print('rs_so_creation_date: ',rs_so_creation_date)
 
-			for j in reservation_schedule_doc:
-				reservation_schedule_doc_num = reservation_schedule_doc.name
-				print('reservation_schedule_doc_num: ',reservation_schedule_doc_num)
+			reservation_schedule_items = frappe.db.sql(f"""
+														SELECT name, item_code, qty, delivered_qty, reserve_qty FROM `tabReservation Schedule Item`
+														WHERE
+														parent = '{rs_number}'
+														AND
+														(
+															SELECT docstatus from `tabReservation Schedule` 
+															WHERE name = `tabReservation Schedule Item`.parent
+														) = 1
+														""",as_dict=1)
+			print('reservation_schedule_items:',reservation_schedule_items)
 
-				reservation_schedule_items = frappe.db.sql(f"""
-																SELECT item_code,qty,delivered_qty,reserve_qty FROM `tabReservation Schedule Item`
-																WHERE
-																parent = '{reservation_schedule_doc_num}' 
-																AND
-																item_code = '{item_code}'
-																AND
-																(
-																	SELECT docstatus from `tabReservation Schedule` 
-																	WHERE name = `tabReservation Schedule Item`.parent
-																) = 1
-															""",as_dict=1)[0]
+			# if rs_so_creation_date == None:
+			# 	continue
 
-				print('reservation_schedule_items:',reservation_schedule_items)
+			for item in reservation_schedule_items:
+				if item.item_code != pr_item_code:
+					continue
+				else:
+					rs_qty = float(item.qty)
+					rs_reserve_qty = float(item.reserve_qty)
+					rs_delivered_qty = float(item.delivered_qty)
 
-				rs_qty = float(reservation_schedule_items.qty)
-				rs_reserve_qty = float(reservation_schedule_items.reserve_qty)
-				rs_delivered_qty = float(reservation_schedule_items.delivered_qty)
+					new_reserve_qty = rs_qty - rs_delivered_qty
+					
+					print('new_reserve_qty: ',new_reserve_qty)
 
-				new_reserve_qty = rs_qty - rs_reserve_qty
-				print('new_reserve_qty: ',new_reserve_qty)
-
-				if pr_qty > new_reserve_qty:
-					if new_reserve_qty > 0 :
-						frappe.db.set_value('Reservation Schedule Item',
-										{'parent':reservation_schedule_doc_num, 'item_code':item_code},
-										'reserve_qty',rs_qty,update_modified=True)
-					else:
-						continue
-				elif pr_qty < new_reserve_qty:
-					if new_reserve_qty > 0 :
-						reserve = rs_reserve_qty + pr_qty
-						frappe.db.set_value('Reservation Schedule Item',
-										{'parent':reservation_schedule_doc_num, 'item_code':item_code},
-										'reserve_qty',reserve,update_modified=True)
-					else:
-						continue
+					if pr_qty >= new_reserve_qty:
+						if new_reserve_qty > 0 :
+							frappe.db.set_value('Reservation Schedule Item',item.name,
+											'reserve_qty',new_reserve_qty)
+							pr_qty = pr_qty - new_reserve_qty
+						else:
+							continue
+					elif pr_qty <= new_reserve_qty:
+						if new_reserve_qty > 0 :
+							frappe.db.set_value('Reservation Schedule Item',item.name,
+											'reserve_qty',pr_qty)
+							pr_qty = 0
+						else:
+							continue
