@@ -104,8 +104,20 @@ app_license = "MIT"
 
 doc_events = {
 	"Stock Ledger Entry": {
-		"validate": "reservation_system.reservation_system.doctype.reservation_schedule.reservation_schedule.update_delivered_qty",
+		"on_submit": "reservation_system.reservation_system.doctype.reservation_schedule.reservation_schedule.update_delivered_qty",
 	},
+
+	"Purchase Receipt": {
+		"on_cancel": "reservation_system.reservation_system.doctype.reservation_schedule.reservation_schedule.recalculate_reserve_qty_for_pr",
+	},
+
+	"Delivery Note": {
+		"on_cancel": "reservation_system.reservation_system.doctype.reservation_schedule.reservation_schedule.recalculate_reserve_qty_for_dn"
+	},
+
+	# "Delivery Note": {
+	# 	"on_cancel": "reservation_system.reservation_system.doctype.reservation_schedule.reservation_schedule.recalculate_reserve_qty_for_dn",
+	# }
 }
 
 # Scheduled Tasks
