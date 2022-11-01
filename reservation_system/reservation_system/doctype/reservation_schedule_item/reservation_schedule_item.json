@@ -97,7 +97,7 @@
   "purchase_order",
   "column_break_89",
   "purchase_order_item",
-  "so_details",
+  "so_detail",
   "reserve_qty"
  ],
  "fields": [
@@ -841,19 +841,19 @@
    "read_only": 1
   },
   {
-   "fieldname": "so_details",
-   "fieldtype": "Data",
-   "label": "SO Details"
+   "fieldname": "reserve_qty",
+   "fieldtype": "Float",
+   "label": "Reserve Qty"
   },
   {
-   "fieldname": "reserve_qty",
+   "fieldname": "so_detail",
    "fieldtype": "Data",
-   "label": "Reserve Qty"
+   "label": "SO Detail"
   }
  ],
  "istable": 1,
  "links": [],
- "modified": "2022-09-17 11:15:32.096206",
+ "modified": "2022-11-01 10:40:23.569480",
  "modified_by": "Administrator",
  "module": "Reservation System",
  "name": "Reservation Schedule Item",

@@ -94,3 +94,23 @@ frappe.ui.form.on('Reservation Schedule', {
 	    }
     },
 });
+
+
+frappe.ui.form.on('Reservation Schedule', {
+	refresh: function(frm) {
+		if (frm.doc.docstatus == 1 && frm.doc.status != 'Complete' && frm.doc.status != 'Draft') {
+			frm.add_custom_button(__('Delivery Note'), () => make_delivery_note(), __('Create'));
+			frm.page.set_inner_btn_group_as_primary(__('Create'));
+		}
+	},
+});
+
+function make_delivery_note() {
+	frappe.model.open_mapped_doc({
+		method: "reservation_system.reservation_system.doctype.reservation_schedule.reservation_schedule.make_delivery_note",
+		frm: cur_frm
+	})
+}
+
+
+
