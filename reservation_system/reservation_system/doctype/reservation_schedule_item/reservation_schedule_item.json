@@ -98,7 +98,8 @@
   "column_break_89",
   "purchase_order_item",
   "so_detail",
-  "reserve_qty"
+  "reserve_qty",
+  "so_item_name"
  ],
  "fields": [
   {
@@ -849,11 +850,16 @@
    "fieldname": "so_detail",
    "fieldtype": "Data",
    "label": "SO Detail"
+  },
+  {
+   "fieldname": "so_item_name",
+   "fieldtype": "Data",
+   "label": "SO Item Name"
   }
  ],
  "istable": 1,
  "links": [],
- "modified": "2022-11-01 10:40:23.569480",
+ "modified": "2022-11-05 10:33:38.550486",
  "modified_by": "Administrator",
  "module": "Reservation System",
  "name": "Reservation Schedule Item",
