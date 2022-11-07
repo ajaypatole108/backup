@@ -112,12 +112,12 @@ doc_events = {
 	},
 
 	"Delivery Note": {
-		"on_cancel": "reservation_system.reservation_system.doctype.reservation_schedule.reservation_schedule.recalculate_reserve_qty_for_dn"
+		"on_cancel": "reservation_system.reservation_system.doctype.reservation_schedule.reservation_schedule.recalculate_reserve_qty_for_dn",
 	},
-
+	
 	"Stock Entry": {
 		"on_cancel": "reservation_system.reservation_system.doctype.reservation_schedule.reservation_schedule.recalculate_reserve_qty_for_stock_entry",
-	}
+	},
 }
 
 # Scheduled Tasks

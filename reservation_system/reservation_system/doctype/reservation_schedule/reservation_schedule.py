@@ -334,7 +334,7 @@ def update_delivered_qty(doc,event):
 											""",as_dict=1)[0]
 
 		reservation_schedule_doc = frappe.db.sql(f"""
-													SELECT rsi.name, rsi.item_code, rsi.qty, rsi.reserve_qty, rsi.delivered_qty, rsi.so_detail, rs.so_date, rs.parent_warehouse
+													SELECT rsi.name, rsi.item_code, rsi.parent, rsi.qty, rsi.reserve_qty, rsi.delivered_qty, rsi.so_detail, rs.so_date, rs.parent_warehouse
 													FROM `tabReservation Schedule Item` AS rsi
 													JOIN `tabReservation Schedule` As rs
 													ON rsi.parent = rs.name
@@ -357,15 +357,16 @@ def update_delivered_qty(doc,event):
 				if rs_qty != rs_reserve_qty:
 					if sl_qty >= new_reserve_qty:
 						if new_reserve_qty > 0:
-							new_reserve = rs_reserve_qty + new_reserve_qty
+							# new_reserve = rs_reserve_qty + new_reserve_qty
 							frappe.db.set_value('Reservation Schedule Item',i.name,
-												'reserve_qty',new_reserve)
+												'reserve_qty',new_reserve_qty)
 							sl_qty = sl_qty - new_reserve_qty
 					else:
-						sl_qty2 = rs_reserve_qty + sl_qty
+						sl1 = rs_qty - rs_reserve_qty
+						sl_qty2 = rs_reserve_qty + sl1
 						frappe.db.set_value('Reservation Schedule Item',i.name,
 												'reserve_qty',sl_qty2)
-						sl_qty = 0.0
+						sl_qty = sl_qty - sl1
 
 # ------------------------------------------------------ Stock Transfer Entry ------------------------------------------------------
 	if doc.voucher_type == 'Stock Entry':
@@ -434,7 +435,7 @@ def update_delivered_qty(doc,event):
 							if sle_qty >= new_reserve_qty:
 								if new_reserve_qty > 0 :
 									new_reserve = rs_reserve_qty + new_reserve_qty
-									frappe.db.set_value('Reservation Schedule Item',reservation_schedule_doc[0].name,
+									frappe.db.set_value('Reservation Schedule Item', reservation_schedule_doc[0].name,
 														'reserve_qty',new_reserve)
 									sle_qty = sle_qty - new_reserve_qty
 							else:
@@ -442,27 +443,26 @@ def update_delivered_qty(doc,event):
 								frappe.db.set_value('Reservation Schedule Item',reservation_schedule_doc[0].name,
 														'reserve_qty',sle_qty2)
 								sle_qty = 0.0
-		else:
-			if len(reservation_schedule_doc) != 0: # Means There is no reservation whose status = open
-				if reservation_schedule_doc[0].item_code != None: # if transfer item not present in reservation schedule document
-					rs_qty = float(reservation_schedule_doc[0].qty)
-					rs_sum_reserve_qty = float(reservation_schedule_doc[0].sum_reserve_qty)
+			else:
+				if len(reservation_schedule_doc) != 0: # Means There is no reservation whose status = open
+					if reservation_schedule_doc[0].item_code != None: # if transfer item not present in reservation schedule document
+						rs_qty = float(reservation_schedule_doc[0].qty)
+						rs_sum_reserve_qty = float(reservation_schedule_doc[0].sum_reserve_qty)
 
-					actual_qty_in_wh = stock_entry_detail.actual_qty					
-					open_qty = actual_qty_in_wh - rs_sum_reserve_qty
-					print('actual_qty_in_wh: ',actual_qty_in_wh)
-					print('rs_sum_reserve_qty: ',rs_sum_reserve_qty)
-					print('open_qty: ',open_qty)
+						actual_qty_in_wh = stock_entry_detail.actual_qty					
+						open_qty = actual_qty_in_wh - rs_sum_reserve_qty
+						print('actual_qty_in_wh: ',actual_qty_in_wh)
+						print('rs_sum_reserve_qty: ',rs_sum_reserve_qty)
+						print('open_qty: ',open_qty)
 
-					if open_qty < 0 :
-						open_qty = 0
-						msg = f'{open_qty} qty are allowed for Transfer'
-						frappe.throw(msg)
-					else:
-						if open_qty < -(sle_qty):
-							msg = f'Only {open_qty} qty are allowed for Transfer'
+						if open_qty < 0 :
+							open_qty = 0
+							msg = f'{open_qty} qty are allowed for Transfer'
 							frappe.throw(msg)
-
+						else:
+							if open_qty < -(sle_qty):
+								msg = f'Only {open_qty} qty are allowed for Transfer'
+								frappe.throw(msg)
 
 #----------------------------------------------------------Hook on_cancel: Purchase Receipt------------------------------------------------
 def recalculate_reserve_qty_for_pr(doc,event):
@@ -559,12 +559,15 @@ def recalculate_reserve_qty_for_dn(doc,event):
 #---------------------------------------------------------- Hook on_cancel: Stock Transfer Entry (STE) ------------------------------------------------
 def recalculate_reserve_qty_for_stock_entry(doc,event):
 	print('--------------------------------------------- recalculate_reserve_qty_for_stock_entry ---------------------------------------------------')
+	print('doc: ',doc)
+	print('from_warehouse: ',doc.from_warehouse)
+	print('to_warehouse: ',doc.to_warehouse)
 	stock_entry_detail = frappe.db.sql(f"""
 										SELECT name, item_code, qty, actual_qty, s_warehouse,t_warehouse,
 										(
 											SELECT parent_warehouse FROM `tabWarehouse`
 											WHERE
-											name = '{doc.from_warehouse}'
+											name = '{doc.to_warehouse}'
 										) AS parent_warehouse
 										FROM `tabStock Entry Detail`
 										WHERE
