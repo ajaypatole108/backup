@@ -174,8 +174,13 @@ def reserve_item(item, parent_warehouse):
 		else:
 			print('reserve_qty else')
 			if item.qty != item.delivered_qty:
-				reserve_qty = new_wh_qty
-				item.db_set('reserve_qty',reserve_qty)
+				balance_qty = item.qty - item.delivered_qty
+				reserve_qty = new_wh_qty - balance_qty
+				if reserve_qty <= 0 :
+					reserve_qty = new_wh_qty
+					item.db_set('reserve_qty',reserve_qty)
+				else:
+					item.db_set('reserve_qty',reserve_qty)
 			else:
 				item.db_set('reserve_qty',0)
 	else:
